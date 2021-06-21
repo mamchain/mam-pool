@@ -554,6 +554,7 @@ var pool = module.exports = function pool(options, authorizeFn){
                     params.extraNonce2,
                     params.nTime,
                     params.nonce,
+                    params.mask,
                     client.remoteAddress,
                     client.socket.localPort,
                     params.name

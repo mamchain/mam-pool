@@ -78,6 +78,16 @@ var StratumClient = function(options){
                     error  : true
                 });
                 break;
+	    case 'mining.configure':
+                sendJson({
+                    id     : message.id,
+                    error : null,
+                    result: {
+                        'version-rolling':true,
+                        'version-rolling.mask':"1fffe000"
+                    }
+                });
+                break;
             default:
                 _this.emit('unknownStratumMethod', message);
                 break;
@@ -162,7 +172,8 @@ var StratumClient = function(options){
                 jobId       : message.params[1],
                 extraNonce2 : message.params[2],
                 nTime       : message.params[3],
-                nonce       : message.params[4]
+                nonce       : message.params[4],
+		        mask        : message.params[5]
             },
             function(error, result){
                 if (!considerBan(result)){

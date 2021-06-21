@@ -164,7 +164,7 @@ var JobManager = module.exports = function JobManager(options){
 
     };
 
-    this.processShare = function(jobId, previousDifficulty, difficulty, extraNonce1, extraNonce2, nTime, nonce, ipAddress, port, workerName){
+    this.processShare = function(jobId, previousDifficulty, difficulty, extraNonce1, extraNonce2, nTime, nonce,mask,  ipAddress, port, workerName){
         var shareError = function(error){
             _this.emit('share', {
                 job: jobId,
@@ -213,7 +213,7 @@ var JobManager = module.exports = function JobManager(options){
 
         var merkleRoot = util.reverseBuffer(job.merkleTree.withFirst(coinbaseHash)).toString('hex');
 
-        var headerBuffer = job.serializeHeader(merkleRoot, nTime, nonce);
+        var headerBuffer = job.serializeHeader(merkleRoot, nTime, nonce,mask);
         var headerHash = hashDigest(headerBuffer, nTimeInt);
         var headerBigNum = bignum.fromBuffer(headerHash, {endian: 'little', size: 32});
 
@@ -252,7 +252,7 @@ var JobManager = module.exports = function JobManager(options){
                 if (previousDifficulty && shareDiff >= previousDifficulty){
                     difficulty = previousDifficulty;
                 }
-                else{
+                else{ 
                     return shareError([23, 'low difficulty share of ' + shareDiff]);
                 }
 
