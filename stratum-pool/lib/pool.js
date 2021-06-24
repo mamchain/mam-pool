@@ -28,7 +28,7 @@ var pool = module.exports = function pool(options, authorizeFn){
     var emitErrorLog   = function(text) { _this.emit('log', 'error'  , text); };
     var emitSpecialLog = function(text) { _this.emit('log', 'special', text); };
 
-    mint_addr_index = 0
+    //mint_addr_index = 0
 
     if (!(options.coin.algorithm in algos)){
         emitErrorLog('The ' + options.coin.algorithm + ' hashing algorithm is not supported.');
@@ -249,12 +249,26 @@ var pool = module.exports = function pool(options, authorizeFn){
                 merkle_branch_aux : shareData.merkle_branch_aux,
                 merkle_branch : shareData.merkle_branch,
                 mam_data : shareData.mam_data,
-                spent : _this.daemon.instances[0].mam.mint_addr[shareData.mint_addr_index].spent,
-                pledgefee : _this.daemon.instances[0].mam.mint_addr[shareData.mint_addr_index].pledgefee
+                //spent : _this.daemon.instances[0].mam.mint_addr[shareData.mint_addr_index].spent,
+                //pledgefee : _this.daemon.instances[0].mam.mint_addr[shareData.mint_addr_index].pledgefee
+                spent : shareData.current_addr.spent,
+                pledgefee : shareData.current_addr.pledgefee
             },
             id: Date.now() + Math.floor(Math.random() * 10)
         });
-        //console.log(requestJson);
+        // new 提交的时候 更新
+        const r = Math.floor(Math.random() * _this.daemon.instances[0].mam.mint_addr1.length);
+        const obj = _this.daemon.instances[0].mam.mint_addr1[r];
+        _this.daemon.instances[0].mam.mint_addr0.push(obj);
+        if (_this.daemon.instances[0].mam.mint_addr0.length > _this.daemon.instances[0].mam.len) {
+            _this.daemon.instances[0].mam.mint_addr1.push(_this.daemon.instances[0].mam.mint_addr0[0]);
+            _this.daemon.instances[0].mam.mint_addr0.splice(0,1);
+        }
+        _this.daemon.instances[0].mam.mint_addr1.splice(r,1);
+        _this.daemon.instances[0].mam.current_addr = obj;
+        //console.log("current_addr",obj,"r",r)
+        //console.log("mint_addr0",_this.daemon.instances[0].mam.mint_addr0)
+        //console.log("mint_addr1",_this.daemon.instances[0].mam.mint_addr1)
         req.end(requestJson);
     }
 
@@ -649,15 +663,18 @@ var pool = module.exports = function pool(options, authorizeFn){
                     var requestJson = JSON.stringify({
                     method: 'getwork',
                     params: {
-                        spent : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].spent,
-                        pledgefee : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].pledgefee
+                        //spent : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].spent,
+                        //pledgefee : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].pledgefee
+                        spent : _this.daemon.instances[0].mam.current_addr.spent,
+                        pledgefee : _this.daemon.instances[0].mam.current_addr.pledgefee
                     },
                     id: Date.now() + Math.floor(Math.random() * 10)});
                     
                     mam_performHttpRequest(requestJson,function(res) {
-                        res.work.mint_addr_index = mint_addr_index
+                        //res.work.mint_addr_index = mint_addr_index
+                        res.work.current_addr = _this.daemon.instances[0].mam.current_addr
                         result.response.mam = res.work;
-                        mint_addr_index = res.work.prevblockheight % _this.daemon.instances[0].mam.mint_addr.length
+                        //mint_addr_index = res.work.prevblockheight % _this.daemon.instances[0].mam.mint_addr.length
                         var processedNewBlock = _this.jobManager.processTemplate(result.response);
                         callback(null, result.response, processedNewBlock);
                         callback = function(){};

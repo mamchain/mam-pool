@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import subprocess
+import json
+
+def run_cmd(cmd):
+    info = subprocess.run(cmd, shell=True,stdout=subprocess.PIPE,universal_newlines=True)
+    return info.stdout
+def get_pool_addr(len):
+    cmd = "minemon-cli getforkheight"
+    ret = run_cmd(cmd)
+    cmd = "minemon-cli getblockhash %s" % ret.strip("\n")
+    block_hash = json.loads(run_cmd(cmd))[0]
+    pool_addr = []
+    for i in range(len):
+        cmd = "minemon-cli getblock %s " % block_hash
+        ret = json.loads(run_cmd(cmd))
+        block_hash = ret["hashPrev"]
+        if block_hash == "0000000000000000000000000000000000000000000000000000000000000000":
+            break
+        cmd = "minemon-cli gettransaction %s" % ret["txmint"]
+        ret = json.loads(run_cmd(cmd))
+        pool_addr.append(ret["transaction"]["sendto"])
+    return pool_addr
+
+bitcoin_str = ""
+with open('./pool_configs/bitcoin.json','r') as f:
+    pool_addr0 = []
+    pool_addr1 = []
+    data = json.load(f)
+    pool_addr1 = list(data["daemons"][0]["mam"]["mint_addr"])
+    l = data["daemons"][0]["mam"]["len"]
+    pool_addr = get_pool_addr(l - 1)
+    for obj in data["daemons"][0]["mam"]["mint_addr"]:
+        for i in range(len(pool_addr)):
+            if pool_addr[i] == obj["pool_addr"]:
+                pool_addr0.append(obj)
+                pool_addr1.remove(obj)
+
+    current_addr = pool_addr1[0]
+    pool_addr0.append(current_addr)
+    pool_addr1.remove(current_addr)
+    #if len(pool_addr0) > l:
+    #    pool_addr1.append(pool_addr0[0])
+    #    pool_addr0.remove(pool_addr0[0])
+    data["daemons"][0]["mam"]["mint_addr0"] = pool_addr0
+    data["daemons"][0]["mam"]["mint_addr1"] = pool_addr1
+    data["daemons"][0]["mam"]["current_addr"] = current_addr
+    bitcoin_str = json.dumps(data,indent=4)
+
+with open('./pool_configs/bitcoin.json','w') as f:
+    f.write(bitcoin_str)
