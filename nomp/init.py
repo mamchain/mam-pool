@@ -24,6 +24,7 @@ def get_pool_addr(len):
         pool_addr.append(ret["transaction"]["sendto"])
     return pool_addr
 
+#exit()
 bitcoin_str = ""
 with open('./pool_configs/bitcoin.json','r') as f:
     pool_addr0 = []
@@ -32,18 +33,27 @@ with open('./pool_configs/bitcoin.json','r') as f:
     pool_addr1 = list(data["daemons"][0]["mam"]["mint_addr"])
     l = data["daemons"][0]["mam"]["len"]
     pool_addr = get_pool_addr(l - 1)
-    for obj in data["daemons"][0]["mam"]["mint_addr"]:
-        for i in range(len(pool_addr)):
+    pool_addr = pool_addr[::-1]
+    for i in range(len(pool_addr)):
+        for obj in data["daemons"][0]["mam"]["mint_addr"]:
             if pool_addr[i] == obj["pool_addr"]:
                 pool_addr0.append(obj)
                 pool_addr1.remove(obj)
+                break
+    #for obj in data["daemons"][0]["mam"]["mint_addr"]:
+    #    for i in range(len(pool_addr)):
+    #        if pool_addr[i] == obj["pool_addr"]:
+    #            pool_addr0.append(obj)
+    #            pool_addr1.remove(obj)
 
     current_addr = pool_addr1[0]
     pool_addr0.append(current_addr)
     pool_addr1.remove(current_addr)
-    #if len(pool_addr0) > l:
-    #    pool_addr1.append(pool_addr0[0])
-    #    pool_addr0.remove(pool_addr0[0])
+    if len(pool_addr0) >= l:
+        obj = pool_addr0[0]
+        pool_addr0.remove(obj)
+        pool_addr1.append(obj)
+    #print(len(pool_addr0))
     data["daemons"][0]["mam"]["mint_addr0"] = pool_addr0
     data["daemons"][0]["mam"]["mint_addr1"] = pool_addr1
     data["daemons"][0]["mam"]["current_addr"] = current_addr

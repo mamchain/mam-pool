@@ -276,7 +276,6 @@ var JobManager = module.exports = function JobManager(options){
             mam_submit : mam_submit,
             prevblockhash : job.rpcData.mam.prevblockhash,
             mam_data : job.rpcData.mam.mam_data,
-            //mint_addr_index : job.rpcData.mam.mint_addr_index,
             current_addr : job.rpcData.mam.current_addr,
             btc80 : headerBuffer,
             coinbase : coinbaseBuffer,
