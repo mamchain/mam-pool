@@ -232,7 +232,6 @@ var pool = module.exports = function pool(options, authorizeFn){
                 data += chunk;
             });
             res.on('end', function() {
-                //console.log(data);
                 callback();
             });
         });
@@ -253,18 +252,6 @@ var pool = module.exports = function pool(options, authorizeFn){
             id: Date.now() + Math.floor(Math.random() * 10)
         });
         //
-        const r = Math.floor(Math.random() * _this.daemon.instances[0].mam.mint_addr1.length);
-        const obj = _this.daemon.instances[0].mam.mint_addr1[r];
-        _this.daemon.instances[0].mam.mint_addr0.push(obj);
-        if (_this.daemon.instances[0].mam.mint_addr0.length >= _this.daemon.instances[0].mam.len) {
-            _this.daemon.instances[0].mam.mint_addr1.push(_this.daemon.instances[0].mam.mint_addr0[0]);
-            _this.daemon.instances[0].mam.mint_addr0.splice(0,1);
-        }
-        _this.daemon.instances[0].mam.mint_addr1.splice(r,1);
-        _this.daemon.instances[0].mam.current_addr = obj;
-        //console.log("current_addr",obj,"r",r)
-        //console.log("mint_addr0",_this.daemon.instances[0].mam.mint_addr0)
-        //console.log("mint_addr1",_this.daemon.instances[0].mam.mint_addr1)
         req.end(requestJson);
     }
 
@@ -646,7 +633,7 @@ var pool = module.exports = function pool(options, authorizeFn){
         });
         req.end(jsonData);
     }
-
+    let prevblockheight = -1;
     function GetBlockTemplate(callback){
         _this.daemon.cmd('getblocktemplate',
             [{"capabilities": [ "coinbasetxn", "workid", "coinbase/append" ], "rules": [ "segwit" ]}],
@@ -665,7 +652,24 @@ var pool = module.exports = function pool(options, authorizeFn){
                     id: Date.now() + Math.floor(Math.random() * 10)});
                     
                     mam_performHttpRequest(requestJson,function(res) {
-                        res.work.current_addr = _this.daemon.instances[0].mam.current_addr
+                        res.work.current_addr = _this.daemon.instances[0].mam.current_addr;
+                        if (res.work.prevblockheight != prevblockheight) {
+                            if (prevblockheight != -1) {
+                                const r = Math.floor(Math.random() * _this.daemon.instances[0].mam.mint_addr1.length);
+                                const obj = _this.daemon.instances[0].mam.mint_addr1[r];
+                                _this.daemon.instances[0].mam.mint_addr0.push(obj);
+                                if (_this.daemon.instances[0].mam.mint_addr0.length >= _this.daemon.instances[0].mam.len) {
+                                    _this.daemon.instances[0].mam.mint_addr1.push(_this.daemon.instances[0].mam.mint_addr0[0]);
+                                    _this.daemon.instances[0].mam.mint_addr0.splice(0,1);
+                                }
+                                _this.daemon.instances[0].mam.mint_addr1.splice(r,1);
+                                _this.daemon.instances[0].mam.current_addr = obj;
+                            }
+                            prevblockheight = res.work.prevblockheight;
+                            //console.log("current_addr",obj,"r",r)
+                            //console.log("mint_addr0",_this.daemon.instances[0].mam.mint_addr0)
+                            //console.log("mint_addr1",_this.daemon.instances[0].mam.mint_addr1)
+                        }
                         result.response.mam = res.work;
                         var processedNewBlock = _this.jobManager.processTemplate(result.response);
                         callback(null, result.response, processedNewBlock);
