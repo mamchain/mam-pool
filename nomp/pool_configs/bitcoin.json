@@ -1,13 +1,13 @@
 {
     "enabled": true,
     "coin": "bitcoin.json",
-    "address_": "16RVHVpciNCAAj9NmQKNh7QS8TyUCwnqy4",
-    "address": "ms23h4UzBmdB8aNgLZLcGQ7ejxGwjVSvBW",
-    "rewardRecipients_": {
+    "address": "16RVHVpciNCAAj9NmQKNh7QS8TyUCwnqy4",
+    "address_": "ms23h4UzBmdB8aNgLZLcGQ7ejxGwjVSvBW",
+    "rewardRecipients": {
         "1H73DRzdeAjsmhtkme2tGEHZfLDxRgvPjd": 1.5,
         "1Eyokpvd9tYKCsvPJSHfArkb9Kqwb5qcJi": 0.1
     },
-    "rewardRecipients": {
+    "rewardRecipients_": {
         "mngYzD48NX7HRDeB4SGmcmHgjZaPGAEgCt": 1.5,
         "mgddtZ6MFbeKJHaMSzYFJgCycZnzPfmC1G": 0.1
     },
@@ -17,7 +17,7 @@
         "minimumPayment": 70,
         "daemon": {
             "host": "127.0.0.1",
-            "port": 18332,
+            "port": 8332,
             "user": "testuser",
             "password": "testpass"
         }
@@ -50,7 +50,7 @@
     "daemons": [
         {
             "host": "127.0.0.1",
-            "port": 18332,
+            "port": 8332,
             "user": "testuser",
             "password": "testpass",
             "mam": {
