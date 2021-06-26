@@ -1,6 +1,6 @@
 {
     "logLevel": "debug",
-    "logColors": false,
+    "logColors": true,
     "cliPort": 17117,
     "clustering": {
         "enabled": false,

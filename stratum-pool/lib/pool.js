@@ -369,10 +369,27 @@ var pool = module.exports = function pool(options, authorizeFn){
                     });
                 });
             }
-            if (shareData.mam_submit){
-                console.log("mam-debug submit block:",shareData.current_addr);
-                MamSubmitBlock(shareData,function(ret) {
-                    console.log("mam-debug submit ret:",ret);
+            if (shareData.mam_submit) {
+                MamSubmitBlock(shareData,function(data) {
+                    let ret = JSON.parse(data);
+                    if (ret.result != undefined) {
+                        let new_height = Number('0x' + ret.result.substr(0,8));
+                        if (new_height > _this.daemon.instances[0].mam.mam_height) {
+                            _this.daemon.instances[0].mam.mam_height = new_height;
+                            const r = Math.floor(Math.random() * _this.daemon.instances[0].mam.mint_addr1.length);
+                            const obj = _this.daemon.instances[0].mam.mint_addr1[r];
+                            _this.daemon.instances[0].mam.mint_addr0.push(obj);
+                            
+                            if (_this.daemon.instances[0].mam.mint_addr0.length >= _this.daemon.instances[0].mam.len) {
+                                _this.daemon.instances[0].mam.mint_addr1.push(_this.daemon.instances[0].mam.mint_addr0[0]);
+                                _this.daemon.instances[0].mam.mint_addr0.splice(0,1);
+                            }
+                            _this.daemon.instances[0].mam.mint_addr1.splice(r,1);
+                            _this.daemon.instances[0].mam.current_addr = obj;
+                        }
+                    } else {
+                        console.log("Err:",ret)
+                    }
                 });
             }
         }).on('log', function(severity, message){
@@ -635,7 +652,6 @@ var pool = module.exports = function pool(options, authorizeFn){
         });
         req.end(jsonData);
     }
-    let prevblockheight = -1;
     function GetBlockTemplate(callback){
         _this.daemon.cmd('getblocktemplate',
             [{"capabilities": [ "coinbasetxn", "workid", "coinbase/append" ], "rules": [ "segwit" ]}],
@@ -654,34 +670,14 @@ var pool = module.exports = function pool(options, authorizeFn){
                     id: Date.now() + Math.floor(Math.random() * 10)});
                     
                     mam_performHttpRequest(requestJson,function(res) {
+                        
                         res.work.current_addr = _this.daemon.instances[0].mam.current_addr;
-                        if (res.work.prevblockheight != prevblockheight) {
-                            if (prevblockheight != -1) {
-                                const r = 0;// Math.floor(Math.random() * _this.daemon.instances[0].mam.mint_addr1.length);
-                                const obj = _this.daemon.instances[0].mam.mint_addr1[r];
-                                _this.daemon.instances[0].mam.mint_addr0.push(obj);
-                                
-                                if (_this.daemon.instances[0].mam.mint_addr0.length >= _this.daemon.instances[0].mam.len) {
-                                    _this.daemon.instances[0].mam.mint_addr1.push(_this.daemon.instances[0].mam.mint_addr0[0]);
-                                    _this.daemon.instances[0].mam.mint_addr0.splice(0,1);
-                                }
-                                _this.daemon.instances[0].mam.mint_addr1.splice(r,1);
-                                _this.daemon.instances[0].mam.current_addr = obj;
-                                console.log("mam-debug obj change:",obj)
-                            }
-                            prevblockheight = res.work.prevblockheight;
-                            //console.log("current_addr",obj,"r",r)
-                            //console.log("mint_addr0",_this.daemon.instances[0].mam.mint_addr0)
-                            //console.log("mint_addr1",_this.daemon.instances[0].mam.mint_addr1)
-                        }
                         result.response.mam = res.work;
+
                         var processedNewBlock = _this.jobManager.processTemplate(result.response);
                         callback(null, result.response, processedNewBlock);
                         callback = function(){};
                     });
-                    //var processedNewBlock = _this.jobManager.processTemplate(result.response);
-                    //callback(null, result.response, processedNewBlock);
-                    //callback = function(){};
                 }
             }, true
         );
