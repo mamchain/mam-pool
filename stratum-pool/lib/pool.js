@@ -28,7 +28,8 @@ var pool = module.exports = function pool(options, authorizeFn){
     var emitErrorLog   = function(text) { _this.emit('log', 'error'  , text); };
     var emitSpecialLog = function(text) { _this.emit('log', 'special', text); };
 
-    mint_addr_index = 0
+    let mint_addr_index = -1;
+    let mam_height = -1;
 
     if (!(options.coin.algorithm in algos)){
         emitErrorLog('The ' + options.coin.algorithm + ' hashing algorithm is not supported.');
@@ -234,8 +235,7 @@ var pool = module.exports = function pool(options, authorizeFn){
                 data += chunk;
             });
             res.on('end', function() {
-                //console.log(data);
-                callback();
+                callback(data);
             });
         });
         
@@ -254,7 +254,6 @@ var pool = module.exports = function pool(options, authorizeFn){
             },
             id: Date.now() + Math.floor(Math.random() * 10)
         });
-        //console.log(requestJson);
         req.end(requestJson);
     }
 
@@ -325,7 +324,6 @@ var pool = module.exports = function pool(options, authorizeFn){
         }
         options.recipients = recipients;
     }
-
     function SetupJobManager(){
 
         _this.jobManager = new jobManager(options);
@@ -372,8 +370,20 @@ var pool = module.exports = function pool(options, authorizeFn){
                     });
                 });
             }
-            if (shareData.mam_submit){
-                MamSubmitBlock(shareData,function(){
+            if (shareData.mam_submit) {
+                MamSubmitBlock(shareData,function(data) {
+                    //console.log("mam-debug,submit data:",shareData);
+                    //{"id":1624674437423,"jsonrpc":"2.0","result":"00000018f163a60fde595a4b9e48908355c34bebde84b34d47bf5c757467c566"}
+                    let ret = JSON.parse(data);
+                    if (ret.result != undefined) {
+                        let new_height = Number('0x' + ret.result.substr(0,8));
+                        if (new_height > mam_height) {
+                            mam_height = new_height;
+                            mint_addr_index = mam_height % _this.daemon.instances[0].mam.mint_addr.length;
+                        }
+                    } else {
+                        console.log("Err:",ret)
+                    }
                 });
             }
         }).on('log', function(severity, message){
@@ -646,22 +656,45 @@ var pool = module.exports = function pool(options, authorizeFn){
                         result.instance.index + ' with error ' + JSON.stringify(result.error));
                     callback(result.error);
                 } else {
-                    var requestJson = JSON.stringify({
-                    method: 'getwork',
-                    params: {
-                        spent : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].spent,
-                        pledgefee : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].pledgefee
-                    },
-                    id: Date.now() + Math.floor(Math.random() * 10)});
-                    
-                    mam_performHttpRequest(requestJson,function(res) {
-                        res.work.mint_addr_index = mint_addr_index
-                        result.response.mam = res.work;
-                        mint_addr_index = res.work.prevblockheight % _this.daemon.instances[0].mam.mint_addr.length
-                        var processedNewBlock = _this.jobManager.processTemplate(result.response);
-                        callback(null, result.response, processedNewBlock);
-                        callback = function(){};
-                    });
+                    if (mint_addr_index == -1) {
+                        let requestJson = JSON.stringify({
+                            method: 'getforkheight',
+                            params: {} ,
+                            id: Date.now() + Math.floor(Math.random()*10)});
+                        mam_performHttpRequest(requestJson,function(res) {
+                            mam_height = res;
+                            mint_addr_index = mam_height % _this.daemon.instances[0].mam.mint_addr.length;
+                            let requestJson = JSON.stringify({
+                                method: 'getwork',
+                                params: {
+                                    spent : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].spent,
+                                    pledgefee : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].pledgefee
+                                },
+                                id: Date.now() + Math.floor(Math.random() * 10)});
+                            mam_performHttpRequest(requestJson,function(res) {
+                                    res.work.mint_addr_index = mint_addr_index;
+                                    result.response.mam = res.work;
+                                    var processedNewBlock = _this.jobManager.processTemplate(result.response);
+                                    callback(null, result.response, processedNewBlock);
+                                    callback = function(){};
+                            });
+                        });
+                    } else {
+                        let requestJson = JSON.stringify({
+                        method: 'getwork',
+                        params: {
+                            spent : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].spent,
+                            pledgefee : _this.daemon.instances[0].mam.mint_addr[mint_addr_index].pledgefee
+                        },
+                        id: Date.now() + Math.floor(Math.random() * 10)});
+                        mam_performHttpRequest(requestJson,function(res) {
+                            res.work.mint_addr_index = mint_addr_index;
+                            result.response.mam = res.work;
+                            var processedNewBlock = _this.jobManager.processTemplate(result.response);
+                            callback(null, result.response, processedNewBlock);
+                            callback = function(){};
+                        });
+                    }
                     //var processedNewBlock = _this.jobManager.processTemplate(result.response);
                     //callback(null, result.response, processedNewBlock);
                     //callback = function(){};
