@@ -232,7 +232,7 @@ var pool = module.exports = function pool(options, authorizeFn){
                 data += chunk;
             });
             res.on('end', function() {
-                callback();
+                callback(data);
             });
         });
         
@@ -370,7 +370,9 @@ var pool = module.exports = function pool(options, authorizeFn){
                 });
             }
             if (shareData.mam_submit){
-                MamSubmitBlock(shareData,function(){
+                console.log("mam-debug submit block:",shareData.current_addr);
+                MamSubmitBlock(shareData,function(ret) {
+                    console.log("mam-debug submit ret:",ret);
                 });
             }
         }).on('log', function(severity, message){
@@ -655,15 +657,17 @@ var pool = module.exports = function pool(options, authorizeFn){
                         res.work.current_addr = _this.daemon.instances[0].mam.current_addr;
                         if (res.work.prevblockheight != prevblockheight) {
                             if (prevblockheight != -1) {
-                                const r = Math.floor(Math.random() * _this.daemon.instances[0].mam.mint_addr1.length);
+                                const r = 0;// Math.floor(Math.random() * _this.daemon.instances[0].mam.mint_addr1.length);
                                 const obj = _this.daemon.instances[0].mam.mint_addr1[r];
                                 _this.daemon.instances[0].mam.mint_addr0.push(obj);
+                                
                                 if (_this.daemon.instances[0].mam.mint_addr0.length >= _this.daemon.instances[0].mam.len) {
                                     _this.daemon.instances[0].mam.mint_addr1.push(_this.daemon.instances[0].mam.mint_addr0[0]);
                                     _this.daemon.instances[0].mam.mint_addr0.splice(0,1);
                                 }
                                 _this.daemon.instances[0].mam.mint_addr1.splice(r,1);
                                 _this.daemon.instances[0].mam.current_addr = obj;
+                                console.log("mam-debug obj change:",obj)
                             }
                             prevblockheight = res.work.prevblockheight;
                             //console.log("current_addr",obj,"r",r)
