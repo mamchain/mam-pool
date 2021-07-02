@@ -223,8 +223,8 @@ var spawnPoolWorkers = function(){
         poolWorkers[forkId] = worker;
         worker.on('exit', function(code, signal){
             logger.error('Master', 'PoolSpawner', 'Fork ' + forkId + ' died, spawning replacement worker...');
-            process.exit()
             setTimeout(function(){
+                process.exit()
                 createPoolWorker(forkId);
             }, 2000);
         }).on('message', function(msg){

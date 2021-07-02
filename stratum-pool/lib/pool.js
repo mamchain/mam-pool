@@ -376,7 +376,11 @@ var pool = module.exports = function pool(options, authorizeFn){
                         let new_height = Number('0x' + ret.result.substr(0,8));
                         if (new_height > _this.daemon.instances[0].mam.mam_height) {
                             _this.daemon.instances[0].mam.mam_height = new_height;
-                            const r = Math.floor(Math.random() * _this.daemon.instances[0].mam.mint_addr1.length);
+                            const l =  _this.daemon.instances[0].mam.mint_addr1.length;
+                            let r = Math.floor(Math.random() * l);
+                            if (_this.daemon.instances[0].mam.mint_addr1[r].mint_addr_index % 5 != 0) {
+                                r = Math.floor(Math.random() * l);
+                            }
                             const obj = _this.daemon.instances[0].mam.mint_addr1[r];
                             _this.daemon.instances[0].mam.mint_addr0.push(obj);
                             
